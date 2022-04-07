@@ -1,28 +1,25 @@
 addpath(genpath('/home/conghu/MatlabCodes/cNE_connectivity'))
-data_path = '/data/congcong/rat_MGB_A1/3_singleunit/ms_dmr/6std';
-load('exp.mat')
-%% find connected pairs
+data_path = '/data/congcong/rat_MGB_A1/3_singleunit/dmr';
 crtxfiles = dir(fullfile(data_path, '*H22x32*split.mat'));
 crtx_exp = cellfun(@(x) x(1:13), {crtxfiles.name}, 'UniformOutput', false);
-crtxfiles = crtxfiles(contains(crtx_exp, exp));
 binsize = 0.5;
-bandwidth = [25, Inf];
+bandwidth = [75, Inf];
 hw = 100;
 nfiles = length(crtxfiles);
+
+%% find connected pairs
 parfor ii = 1:length(crtxfiles)
     
     exp = crtxfiles(ii).name(1:13);
     site = regexp(crtxfiles(ii).name, '(?<=site)\d{1,2}', 'match', 'once');
-    outfile = sprintf('%s-site%s-connected_pairs_test_05ms_25Hz.mat', ...
+    outfile = sprintf('%s-site%s-connected_pairs.mat', ...
         exp,  site);
     
-    if exist(fullfile(data_path,outfile), 'file')
+    if 0%exist(fullfile(data_path,outfile), 'file')
         fprintf('(%d/%d)Already processed %s\n', ii, nfiles, crtxfiles(ii).name)
         continue
     end
     fprintf('(%d/%d)processing %s\n', ii, nfiles, crtxfiles(ii).name)
-    
-    
     
     data = load(fullfile(data_path, crtxfiles(ii).name), ...
         'spk', 'trigger', 'spktrain', 'spktrain_spon');
@@ -66,9 +63,7 @@ parfor ii = 1:length(crtxfiles)
         locators_MGB_spon, locators_A1_spon, ...
         locators_MGB_dmr, locators_A1_dmr, ...
         hw, binsize, [spk_MGB.spk.unit], [spk_A1.spk.unit], bandwidth, ...
-        {'Normal_weak_both', 'Normal_strong', 'Normal_strong_both'...
-        'Poisson_chi_square', 'Poisson_normal', ...
-        'Poisson_chi_square_both', 'Poisson_normal_both', 'Gaussian_convolve'});
+        {'Gaussian_convolve'});
     parsave(fullfile(data_path,outfile), connected_pairs, 'connected_pairs')
     
 end

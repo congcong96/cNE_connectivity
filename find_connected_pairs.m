@@ -64,6 +64,7 @@ nhwbins = hw / binsize;% number of bins in half window
 c = 0;
 for ii = 1:size(spktrain_ref_spon, 1)
     %fprintf('searching pairs for thalamic neuron #%d/%d\n', ii, size(spktrain_ref_spon, 1))
+    
     % get shifted ref spike trains from -hw to hw
     shifted_spk_ref_spon = zeros(2*nhwbins + 1, size(spktrain_ref_spon, 2));
     shifted_spk_ref_stim = zeros(2*nhwbins + 1, size(spktrain_ref_stim, 2));
@@ -86,11 +87,11 @@ for ii = 1:size(spktrain_ref_spon, 1)
         % if the maximum value exists outside of 1-5ms before cortical
         % spikes skip the pair
         [m, ~] = max(ccg_spon_tmp);
-        if sum(ccg_spon_tmp([1:(nhwbins+1/binsize+1) (nhwbins+5/binsize+1):2*nhwbins+1]) == m) > 0
+        if sum(ccg_spon_tmp==m) - sum(ccg_spon_tmp(nhwbins+3:nhwbins+10)==m) > 0
             continue
         end
         [m, ~] = max(ccg_stim_tmp);
-        if sum(ccg_stim_tmp([1:(nhwbins+1/binsize+1) (nhwbins+5/binsize+1):2*nhwbins+1]) == m) > 0
+        if sum(ccg_stim_tmp==m) - sum(ccg_stim_tmp(nhwbins+3:nhwbins+10)==m) > 0
             continue
         end
         
@@ -103,13 +104,13 @@ for ii = 1:size(spktrain_ref_spon, 1)
             ccg_filtered_stim = bandpass(ccg_stim_tmp, bandwidth,1000/binsize);
         end
         
-        % get location of lag and significance of ccg
+        % get lag
         [M_spon, Midx_spon] = max(ccg_filtered_spon);
         lag_spon = (Midx_spon - nhwbins -1) * binsize;
         [M_stim, Midx_stim] = max(ccg_filtered_stim);
         lag_stim = (Midx_stim - nhwbins -1) * binsize;
         
-        if (lag_stim >= 1 && lag_stim <= 5) && (lag_spon >= 1 && lag_spon <= 5)
+        if (lag_stim >= 1 && lag_stim < 5) && (lag_spon >= 1 && lag_spon < 5)
             % when lag of the peak is between 1-5ms
             sig = zeros(1, length(methods));
             thresh_stim = zeros(1, length(methods));
@@ -123,64 +124,71 @@ for ii = 1:size(spktrain_ref_spon, 1)
                         % amplitudes after filtering. mean + 3.1std
                         thresh_spon(kk) = 3.1 * std( ccg_filtered_spon);
                         thresh_stim(kk) = 3.1 * std( ccg_filtered_stim);
-                        sig(kk) = determine_sig(M_spon, thresh_spon(kk), ...
-                            M_stim, thresh_stim(kk), ...
+                        sig(kk) = determine_sig(...
+                            M_spon, Midx_spon, thresh_spon(kk), ...
+                            M_stim, Midx_stim, thresh_stim(kk), ...
                             ccg_filtered_spon, ccg_filtered_stim, 'both');
                         
                     case 'Normal_strong'
                         % one condition (stim or spon) has ccg peak > 5std
                         thresh_spon(kk) = 5 * std( ccg_filtered_spon);
                         thresh_stim(kk) = 5 * std( ccg_filtered_stim);
-                        sig(kk) = determine_sig(M_spon, thresh_spon(kk), ...
-                            M_stim, thresh_stim(kk), ...
+                        sig(kk) = determine_sig(...
+                            M_spon, Midx_spon, thresh_spon(kk), ...
+                            M_stim, Midx_stim, thresh_stim(kk), ...
                             ccg_filtered_spon, ccg_filtered_stim, 'any');
                         
                     case 'Normal_strong_both'
                         % ccg peak > 5std under both conditions
                         thresh_spon(kk) = 5 * std( ccg_filtered_spon);
                         thresh_stim(kk) = 5 * std( ccg_filtered_stim);
-                        sig(kk) = determine_sig(M_spon, thresh_spon(kk), ...
-                            M_stim, thresh_stim(kk), ...
+                        sig(kk) = determine_sig(...
+                            M_spon, Midx_spon, thresh_spon(kk), ...
+                            M_stim, Midx_stim, thresh_stim(kk), ...
                             ccg_filtered_spon, ccg_filtered_stim, 'both');
                         
                     case 'Poisson_chi_square'
                         % one condition ccg peak > 0.5*chi2inv(0.99, 2*(mean+1))
                         thresh_spon(kk) = 0.5*chi2inv(0.99, 2*(mean(ccg_spon_tmp)+1));
                         thresh_stim(kk) = 0.5*chi2inv(0.99, 2*(mean(ccg_stim_tmp)+1));
-                        sig(kk) = determine_sig(M_spon, thresh_spon(kk), ...
-                            M_stim, thresh_stim(kk), ...
+                        sig(kk) = determine_sig(...
+                            M_spon, Midx_spon, thresh_spon(kk), ...
+                            M_stim, Midx_stim, thresh_stim(kk), ...
                             ccg_filtered_spon, ccg_filtered_stim, 'any');
                         
                     case 'Poisson_normal'
                         % one condition ccg peak > 3.1*sqrt(mean)
                         thresh_spon(kk) = 3.1*sqrt(mean(ccg_spon_tmp));
                         thresh_stim(kk) = 3.1*sqrt(mean(ccg_stim_tmp));
-                        sig(kk) = determine_sig(M_spon, thresh_spon(kk), ...
-                            M_stim, thresh_stim(kk), ...
+                        sig(kk) = determine_sig(...
+                            M_spon, Midx_spon, thresh_spon(kk), ...
+                            M_stim, Midx_stim, thresh_stim(kk), ...
                             ccg_filtered_spon, ccg_filtered_stim, 'any');
                         
                     case 'Poisson_chi_square_both'
                         % both condition ccg peak > 0.5*chi2inv(0.99, 2*(mean+1))
                         thresh_spon(kk) = 0.5*chi2inv(0.99, 2*(mean(ccg_spon_tmp)+1));
                         thresh_stim(kk) = 0.5*chi2inv(0.99, 2*(mean(ccg_stim_tmp)+1));
-                        sig(kk) = determine_sig(M_spon, thresh_spon(kk), ...
-                            M_stim, thresh_stim(kk), ...
+                        sig(kk) = determine_sig(...
+                            M_spon, Midx_spon, thresh_spon(kk), ...
+                            M_stim, Midx_stim, thresh_stim(kk), ...
                             ccg_filtered_spon, ccg_filtered_stim, 'both');
                         
                     case 'Poisson_normal_both'
                         % both condition ccg peak > 3.1*sqrt(mean)
                         thresh_spon(kk) = 3.1*sqrt(mean(ccg_spon_tmp));
                         thresh_stim(kk) = 3.1*sqrt(mean(ccg_stim_tmp));
-                        sig(kk) = determine_sig(M_spon, thresh_spon(kk), ...
-                            M_stim, thresh_stim(kk), ...
+                        sig(kk) = determine_sig(...
+                            M_spon, Midx_spon, thresh_spon(kk), ...
+                            M_stim, Midx_stim, thresh_stim(kk), ...
                             ccg_filtered_spon, ccg_filtered_stim, 'both');
                         
                     case 'Gaussian_convolve'
                         % significnact after subtracting baseline
                         ccg_data_spon = get_ccg_data( spktrain_ref_spon(ii,:), spktrain_target_spon(jj,:), binsize, hw, 0 );
                         ccg_data_stim = get_ccg_data( spktrain_ref_stim(ii,:), spktrain_target_stim(jj,:), binsize, hw, 0);
-                        sig(kk) = ccg_data_spon.ab_comod_adj_peak_sig == 1 ...
-                            || ccg_data_stim.ab_comod_adj_peak_sig == 1;
+                        sig(kk) = ccg_data_spon.ab_peak_sig == 1 ...
+                            || ccg_data_stim.ab_peak_sig == 1;
                 end
             end
             
@@ -207,20 +215,16 @@ for ii = 1:size(spktrain_ref_spon, 1)
                 if contains(method, 'Gaussian_convolve')
                     
                     ccg_strct(c).baseline_spon = ccg_data_spon.r_ab_smooth;
-                    ccg_strct(c).ccov_spon = ccg_data_spon.q_ab;
-                    ccg_strct(c).ccov_baseline_spon = ccg_data_spon.q_ab_smooth;
-                    ccg_strct(c).conflimit_spon = ccg_data_spon.conf_limit;
-                    ccg_strct(c).sig_spon = ccg_data_spon.ab_comod_adj_peak_sig;
-                    ccg_strct(c).lag_spon2 = ccg_data_spon.ab_comod_adj_peak_delay;
-                    ccg_strct(c).hw_spon = ccg_data_spon.ab_comod_adj_peak_hw;
+                    ccg_strct(c).high_bound_spon = ccg_data_spon.high_bound;
+                    ccg_strct(c).sig_spon = ccg_data_spon.ab_peak_sig;
+                    ccg_strct(c).lag_spon2 = ccg_data_spon.ab_peak_delay;
+                    ccg_strct(c).hw_spon = ccg_data_spon.ab_peak_hw;
                     
                     ccg_strct(c).baseline_stim = ccg_data_stim.r_ab_smooth;
-                    ccg_strct(c).ccov_stim = ccg_data_stim.q_ab;
-                    ccg_strct(c).ccov_baseline_stim = ccg_data_stim.q_ab_smooth;
-                    ccg_strct(c).conflimit_stim = ccg_data_stim.conf_limit;
-                    ccg_strct(c).sig_stim = ccg_data_stim.ab_comod_adj_peak_sig;
-                    ccg_strct(c).lag_stim2 = ccg_data_stim.ab_comod_adj_peak_delay;
-                    ccg_strct(c).hw_stim = ccg_data_stim.ab_comod_adj_peak_hw;
+                    ccg_strct(c).high_bound_stim = ccg_data_stim.high_bound;
+                    ccg_strct(c).sig_stim = ccg_data_stim.ab_peak_sig;
+                    ccg_strct(c).lag_stim2 = ccg_data_stim.ab_peak_delay;
+                    ccg_strct(c).hw_stim = ccg_data_stim.ab_peak_hw;
                 end
                 
             end
@@ -228,7 +232,8 @@ for ii = 1:size(spktrain_ref_spon, 1)
     end
 end
 
-function sig = determine_sig(M_spon, thresh_spon, M_stim, thresh_stim, ...
+function sig = determine_sig(M_spon, Midx_spon, thresh_spon, ...
+    M_stim, Midx_stim, thresh_stim, ...
     ccg_filtered_spon, ccg_filtered_stim, tag)
 
 if strcmp(tag, 'both')
@@ -238,8 +243,8 @@ elseif strcmp(tag, 'any')
 end
 
 if condition1
-    sig_spon = ccg_filtered_spon > thresh_spon(kk);
-    sig_stim = ccg_filtered_stim > thresh_stim(kk);
+    sig_spon = ccg_filtered_spon > thresh_spon;
+    sig_stim = ccg_filtered_stim > thresh_stim;
     if sig_spon(Midx_spon-1) || sig_spon(Midx_spon+1) ...
             || sig_stim(Midx_stim-1) || sig_stim(Midx_stim+1)
         sig = 1;
