@@ -1,8 +1,12 @@
 addpath(genpath('/home/conghu/MatlabCodes/cNE_connectivity'))
 addpath(genpath('/home/conghu/MatlabCodes/support/figureplot'))
-data_path = '/data/congcong/rat_MGB_A1/3_singleunit/dmr';
-figfolder = '/data/congcong/rat_MGB_A1/figure/singleunit/connect/dmr_spon';
+data_path = '/data/congcong/rat_MGB_A1/3_singleunit/dmr/ks2_ks2';
+figfolder = '/data/congcong/rat_MGB_A1/figure/singleunit/connect/dmr_spon/ks25_ks2';
+if ~isfolder(figfolder)
+    mkdir(figfolder)
+end
 %% find connected pairs
+cd(data_path)
 pairfiles = dir(fullfile(data_path, '*-connected_pairs.mat'));
 binsize = 0.5;
 hw = 100;
@@ -26,12 +30,14 @@ for ii = 1:length(pairfiles)
         % dmr raw
         subplot(221)
         ccg = flip(connected_pairs(jj).ccg_stim);
+        ccg=ccg(:);
         baseline = flip(connected_pairs(jj).baseline_stim);
+        baseline = baseline(:);
         bar(centers, ccg, 1, 'k')
         hold on
         centers2 = -4.5:0.5:-1;
         bar(centers2, ccg(192:199), 1, 'edgecolor', 'r', 'facecolor', 'r')
-        bar(centers2, baseline(192:199), 1, 'k')
+        bar(centers2, min([ccg(192:199),baseline(192:199)],[],2), 1, 'k')
         plot([0 0],[min(ylim) max(ylim)],'r--')
         thresh = flip(connected_pairs(jj).high_bound_stim);
         plot(centers, baseline, 'b', 'linewidth', 1.5)
@@ -45,6 +51,7 @@ for ii = 1:length(pairfiles)
         hold on
         bar(centers, ccg(:)-baseline(:), 1, 'k')
         plot([0 0],[min(ylim) max(ylim)],'r--')
+        plot([5 5],[min(ylim) max(ylim)],'b--')
         ylabel('# of MGB spikes')
         xlabel('time from A1 spike (ms)')
         set(gca,'color','none','box','off')
@@ -54,10 +61,12 @@ for ii = 1:length(pairfiles)
         subplot(222)
         hold on
         ccg = flip(connected_pairs(jj).ccg_spon);
+        ccg = ccg(:);
         baseline = flip(connected_pairs(jj).baseline_spon);
+        baseline = baseline(:);
         bar(centers, ccg, 1, 'k')
         bar(centers2, ccg(192:199), 1, 'edgecolor', 'r', 'facecolor', 'r')
-        bar(centers2, baseline(192:199), 1, 'k')
+        bar(centers2, min([ccg(192:199),baseline(192:199)], [],2), 1, 'k')
         plot([0 0],[min(ylim) max(ylim)],'r--')
         thresh = flip(connected_pairs(jj).high_bound_spon);
         plot(centers, baseline, 'b', 'linewidth', 1.5)
@@ -70,6 +79,7 @@ for ii = 1:length(pairfiles)
         hold on
         bar(centers, ccg(:)-baseline(:), 1, 'k')
         plot([0 0],[min(ylim) max(ylim)],'r--')
+        plot([5 5],[min(ylim) max(ylim)],'b--')
         ylabel('# of MGB spikes')
         xlabel('time from A1 spike (ms)')
         set(gca,'color','none','box','off')

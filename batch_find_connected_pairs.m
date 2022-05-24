@@ -1,5 +1,5 @@
 addpath(genpath('/home/conghu/MatlabCodes/cNE_connectivity'))
-data_path = '/data/congcong/rat_MGB_A1/3_singleunit/dmr';
+data_path = '/data/congcong/rat_MGB_A1/3_singleunit/dmr/ks25_ks2';
 crtxfiles = dir(fullfile(data_path, '*H22x32*split.mat'));
 crtx_exp = cellfun(@(x) x(1:13), {crtxfiles.name}, 'UniformOutput', false);
 binsize = 0.5;
@@ -15,7 +15,7 @@ parfor ii = 1:length(crtxfiles)
     outfile = sprintf('%s-site%s-connected_pairs.mat', ...
         exp,  site);
     
-    if 0%exist(fullfile(data_path,outfile), 'file')
+    if exist(fullfile(data_path,outfile), 'file')
         fprintf('(%d/%d)Already processed %s\n', ii, nfiles, crtxfiles(ii).name)
         continue
     end
