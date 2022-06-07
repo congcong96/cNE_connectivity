@@ -1,8 +1,8 @@
 addpath(genpath('/home/conghu/MatlabCodes/cNE_connectivity'))
 addpath(genpath('/home/conghu/MatlabCodes/support/figureplot'))
 
-data_path = '/data/congcong/rat_MGB_A1/3_singleunit/dmr/ks25_ks2';
-figfolder = '/data/congcong/rat_MGB_A1/figure/singleunit/connect/dmr_spon/ks25_ks2';
+data_path = '/data/congcong/rat_MGB_A1/3_singleunit/dmr';
+figfolder = '/data/congcong/rat_MGB_A1/figure/singleunit/connect/dmr_spon';
 if ~isfolder(figfolder)
     mkdir(figfolder)
 end
@@ -15,7 +15,7 @@ hw = 100;
 nfiles = length(crtxfiles);
 
 %% find connected pairs
-parfor ii = 1:length(crtxfiles)
+for ii = 1:length(crtxfiles)
     
     exp = crtxfiles(ii).name(1:13);
     site = regexp(crtxfiles(ii).name, '(?<=site)\d{1,2}', 'match', 'once');
@@ -74,7 +74,7 @@ parfor ii = 1:length(crtxfiles)
     parsave(fullfile(data_path,outfile), connected_pairs, 'connected_pairs')
     
 end
-%% plot connected pairs ccg
+% plot connected pairs ccg
 cd(data_path)
 pairfiles = dir(fullfile(data_path, '*-connected_pairs.mat'));
 binsize = 0.5;
